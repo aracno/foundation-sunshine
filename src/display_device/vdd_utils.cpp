@@ -1058,10 +1058,23 @@ namespace display_device {
         }
 
         case parsed_config_t::vdd_prep_e::display_off: {
-          // 熄屏模式：只保留VDD，关闭所有物理显示器
-          BOOST_LOG(info) << "应用vdd_prep: 关闭物理显示器";
+          // Keep every active VDD in the topology. Multi-display streaming uses
+          // one Sunshine process per VDD, so collapsing the topology to this
+          // process' VDD would reset or detach the other stream displays.
+          BOOST_LOG(info) << "应用vdd_prep: 关闭物理显示器并保留所有活动VDD";
           new_topology.push_back({ vdd_device_id });
-          // 不添加物理显示器，它们将被禁用
+          const auto available_devices = enum_available_devices();
+          for (const auto &[device_id, info] : available_devices) {
+            if (device_id == vdd_device_id || info.friendly_name != ZAKO_NAME) {
+              continue;
+            }
+            if (info.device_state == device_state_e::active ||
+                info.device_state == device_state_e::primary) {
+              new_topology.push_back({ device_id });
+            }
+          }
+          BOOST_LOG(info) << "VDD-only topology contains " << new_topology.size() << " active virtual displays";
+          // Physical displays are deliberately not added and will be disabled.
           break;
         }
 
