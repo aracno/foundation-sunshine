@@ -251,11 +251,11 @@ jobs:
         if: steps.inno-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          # Download and install Inno Setup 6 (silent install)
-          $url = "https://jrsoftware.org/download.php/is.exe"
-          $installer = "$env:TEMP\innosetup.exe"
-          Invoke-WebRequest -Uri $url -OutFile $installer
-          Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-' -Wait
+          choco install innosetup --yes --no-progress
+          $compiler = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path -LiteralPath $compiler)) {
+            throw "Inno Setup compiler was not installed at $compiler"
+          }
 
       - name: Add Inno Setup to PATH
         shell: pwsh
